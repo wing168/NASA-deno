@@ -1,8 +1,35 @@
 import { Application, send } from "https://deno.land/x/oak@v6.3.2/mod.ts";
 import api from './api.ts';
+import * as log from "https://deno.land/std/log/mod.ts";
 
 const app = new Application();
 const PORT = 5000;
+
+await log.setup({
+    handlers: {
+        console: new log.handlers.ConsoleHandler("INFO"),
+    },
+    loggers: {
+        default: {
+            level: "INFO",
+            handlers: ["console"]
+        }
+    }
+});
+
+app.addEventListener("error", (event) => {
+    log.error(event.error);
+})
+
+app.use(async(ctx, next) => {
+    try {
+        await next();
+    } catch (err) {
+        ctx.response.body = "Internal server error";
+        throw err;
+    }
+    
+})
 
 app.use(async(ctx, next) => {
     await next();
@@ -26,7 +53,8 @@ app.use(async(ctx) => {
         "/index.html",
         "/javascripts/script.js",
         "/stylesheets/style.css",
-        "/images/favicon.png"
+        "/images/favicon.png",
+        "/videos/background.mp4"
     ];
 
     if (fileWhitelist.includes(filePath)) {
@@ -39,6 +67,7 @@ app.use(async(ctx) => {
 
 
 if (import.meta.main) {
+    log.info(`Starting server on port ${PORT}`);
     await app.listen({
         port: PORT
     });

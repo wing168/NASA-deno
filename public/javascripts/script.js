@@ -1,3 +1,5 @@
+//@ts-ignore
+
 let launches = [];
 
 const numberHeading = "No.".padStart(5);
@@ -14,22 +16,22 @@ function initValues() {
   launchDaySelector.setAttribute("value", today);
 }
 
-function loadLaunches() {
+const loadLaunches = async () => {
   // TODO: Once API is ready.
   // Load launches and sort by flight number.
+
+  const launchRes = await fetch("/launches");
+
+  const launchData = await launchRes.json();
+
+  launches = launchData.sort((a, b) => a.flightNumber < b.flightNumber);
+
 }
 
 function loadPlanets() {
-  // TODO: Once API is ready.
-  
-  // let planets = [{kepler_name: "Exoplanet-1"}, {kepler_name: "Exoplanet-2"}];
-  // const planetSelector = document.getElementById("planets-selector");
-  // planets.forEach((planet) => {
-  //   planetSelector.innerHTML += `<option value="${planet.kepler_name}">${planet.kepler_name}</option>`;
-  // });
 
   const getData = async () => {
-    const res = await fetch ("http://localhost:5000/planets");
+    const res = await fetch ("/planets");
     
     const data = await res.json();
 
@@ -43,37 +45,48 @@ function loadPlanets() {
   getData();
   
 
-  
-
-
-
 }
 
-function abortLaunch() {
-  // TODO: Once API is ready.
-  // Delete launch and reload launches.
+const abortLaunch = async (id) => {
+    const deleteLaunch = fetch(`/launches/${id}`, {
+      method: "delete"
+    });
+
+    const res = await deleteLaunch;
+
+    if (res) {
+      loadLaunches;
+      listUpcoming;
+    }
 }
 
-function submitLaunch() {
+const submitLaunch = async () => {
   const target = document.getElementById("planets-selector").value;
   const launchDate = new Date(document.getElementById("launch-day").value);
   const mission = document.getElementById("mission-name").value;
   const rocket = document.getElementById("rocket-name").value;
   const flightNumber = launches[launches.length - 1]?.flightNumber + 1 || 1;
 
-  // TODO: Once API is ready.
-  // Submit above data to launch system and reload launches.
-
-  launches.push({
-    target,
-    launchDate: launchDate / 1000,
-    mission,
-    rocket,
-    flightNumber,
-    upcoming: true
+  const submitData = fetch("/launches", {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      launchDate: Math.floor(launchDate / 1000),
+      flightNumber,
+      mission,
+      rocket,
+      target
+    })
   });
 
-  document.getElementById("launch-success").hidden = false;
+  const res = await submitData;
+
+  if (res) {
+    loadLaunches();
+    document.getElementById("launch-success").hidden = false;
+  } 
 }
 
 function listUpcoming() {
